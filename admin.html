@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tutto Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="styles.css">
+</head> <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+<body>
+
+<header>
+  <h1>👑 Tutto Admin</h1>
+  <p>Panel del dueño — Control total</p>
+</header>
+
+<!-- ✅ Agregar producto -->
+<div class="card">
+  <h2>➕ Nuevo Producto</h2>
+
+  <input id="name" placeholder="Nombre (Ej: Pizza Napolitana)">
+  <input id="desc" placeholder="Descripción (Ej: Salsa + muzza)">
+  <input id="price" type="number" placeholder="Precio">
+
+  <button onclick="addProduct()">Guardar Producto</button>
+</div>
+
+<!-- ✅ Lista productos -->
+<div class="card">
+  <h2>📦 Productos Activos</h2>
+  <div id="productList"></div>
+</div>
+
+<!-- ✅ Pedidos -->
+<div class="card">
+  <h2>🔥 Pedidos en Vivo</h2>
+  <div id="orders"></div>
+</div>
+
+<script type="module">
+  import { db } from "./firebase.js";
+
+  import {
+    collection,
+    addDoc,
+    getDocs,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    query,
+    orderBy
+  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const productList = document.getElementById("productList");
+  const ordersDiv = document.getElementById("orders");
+
+  // ✅ Agregar producto
+  window.addProduct = async function() {
+
+    const name = document.getElementById("name").value;
+    const desc = document.getElementById("desc").value;
+    const price = document.getElementById("price").value;
+
+    if (!name || !price) {
+      alert("⚠️ Nombre y precio obligatorios");
+      return;
+    }
+
+    await addDoc(collection(db, "products"), {
+      name: name,
+      description: desc,
+      price: Number(price)
+    });
+
+    alert("✅ Producto agregado!");
+
+    document.getElementById("name").value = "";
+    document.getElementById("desc").value = "";
+    document.getElementById("price").value = "";
+
+    loadProducts();
+  };
+
+  // ✅ Mostrar productos
+  async function loadProducts() {
+
+    productList.innerHTML = "";
+
+    const snap = await getDocs(collection(db, "products"));
+
+    snap.forEach(docSnap => {
+
+      const p = docSnap.data();
+      const id = docSnap.id;
+
+      const div = document.createElement("div");
+      div.style.marginBottom = "15px";
+
+      div.innerHTML = `
+        <p>
+          <b style="color:gold;">${p.name}</b>
+          ($${p.price})
+        </p>
+
+        <button onclick="deleteProduct('${id}')">
+          🗑️ Eliminar
+        </button>
+        <hr>
+      `;
+
+      productList.appendChild(div);
+    });
+  }
+
+  // ✅ Eliminar producto
+  window.deleteProduct = async function(id) {
+
+    if (!confirm("¿Eliminar producto?")) return;
+
+    await deleteDoc(doc(db, "products", id));
+
+    alert("Producto eliminado ✅");
+
+    loadProducts();
+  };
+
+  // ✅ Pedidos en vivo
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+
+  onSnapshot(q, (snapshot) => {
+
+    ordersDiv.innerHTML = "";
+
+    snapshot.forEach(docSnap => {
+
+      const order = docSnap.data();
+
+      let items = "";
+      order.items.forEach(i => {
+        items += `• ${i.name}<br>`;
+      });
+
+      ordersDiv.innerHTML += `
+        <div class="card">
+          <h3 style="color:gold;">Pedido</h3>
+          <p><b>Mesa:</b> ${order.table || "Delivery"}</p>
+          <p>${items}</p>
+          <p><b>Estado:</b> ${order.status}</p>
+        </div>
+      `;
+    });
+  });
+
+  loadProducts();
+</script> 
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("✅ Tutto PWA instalada"))
+      .catch(err => console.log("Error SW:", err));
+  }
+</script>
+
+</body>
+</html>

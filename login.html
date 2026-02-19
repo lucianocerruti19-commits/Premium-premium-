@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tutto Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="styles.css">
+</head> <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+<body>
+
+<header>
+  <h1>🔐 Tutto Platform</h1>
+  <p>Acceso Personal</p>
+</header>
+
+<div class="card">
+  <h2>Iniciar Sesión</h2>
+
+  <input id="email" type="email" placeholder="Email">
+  <input id="pass" type="password" placeholder="Contraseña">
+
+  <button onclick="login()">Entrar</button>
+
+  <p id="msg"></p>
+</div>
+
+<script type="module" src="auth.js"></script> 
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("✅ Tutto PWA instalada"))
+      .catch(err => console.log("Error SW:", err));
+  }
+</script>
+
+</body>
+</html>

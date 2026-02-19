@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tutto Waiter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="styles.css">
+</head> <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+<body>
+
+<header>
+  <h1>🧑‍🍳 Tutto Mozo</h1>
+  <p>Pedidos desde mesa → Cocina</p>
+</header>
+
+<div class="card">
+  <h2>📌 Mesa</h2>
+  <input id="table" type="number" placeholder="Número de mesa">
+</div>
+
+<div id="products"></div>
+
+<div class="card">
+  <h2>🛒 Pedido Actual</h2>
+  <div id="cart"></div>
+  <button onclick="sendOrder()">✅ Enviar a Cocina</button>
+</div>
+
+<script type="module">
+  import { db } from "./firebase.js";
+
+  import {
+    collection,
+    getDocs,
+    addDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const productsDiv = document.getElementById("products");
+  const cartDiv = document.getElementById("cart");
+
+  let cart = [];
+
+  // ✅ Cargar productos
+  async function loadProducts() {
+    const snap = await getDocs(collection(db, "products"));
+
+    snap.forEach(doc => {
+      const p = doc.data();
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <h2 style="color:gold;">${p.name}</h2>
+        <p>${p.description}</p>
+        <h3>$${p.price}</h3>
+
+        <button onclick="addToCart('${p.name}', ${p.price})">
+          ➕ Agregar
+        </button>
+      `;
+
+      productsDiv.appendChild(card);
+    });
+  }
+
+  // ✅ Agregar al pedido
+  window.addToCart = function(name, price) {
+    cart.push({ name, price });
+    renderCart();
+  };
+
+  // ✅ Render pedido
+  function renderCart() {
+    cartDiv.innerHTML = "";
+
+    if (cart.length === 0) {
+      cartDiv.innerHTML = "<p>Sin productos...</p>";
+      return;
+    }
+
+    let total = 0;
+
+    cart.forEach(item => {
+      total += item.price;
+      cartDiv.innerHTML += `<p>• ${item.name} - $${item.price}</p>`;
+    });
+
+    cartDiv.innerHTML += `
+      <hr>
+      <h3>Total: $${total}</h3>
+    `;
+  }
+
+  // ✅ Enviar pedido a cocina
+  window.sendOrder = async function() {
+
+    const table = document.getElementById("table").value;
+
+    if (!table) {
+      alert("⚠️ Escribí el número de mesa.");
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert("⚠️ No agregaste nada.");
+      return;
+    }
+
+    await addDoc(collection(db, "orders"), {
+      table: table,
+      items: cart,
+      status: "mesa",
+      createdAt: serverTimestamp()
+    });
+
+    alert("✅ Pedido enviado a cocina!");
+
+    cart = [];
+    renderCart();
+  };
+
+  loadProducts();
+</script> 
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("✅ Tutto PWA instalada"))
+      .catch(err => console.log("Error SW:", err));
+  }
+</script>
+
+</body>
+</html>

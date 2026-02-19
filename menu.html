@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tutto Menú QR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#d4af37">
+
+  <!-- Estilo -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header>
+  <h1>📲 Tutto Menú QR</h1>
+  <p>Pedí desde tu mesa</p>
+</header>
+
+<!-- Mesa -->
+<div class="card">
+  <h2>🪑 Número de Mesa</h2>
+  <input id="table" placeholder="Ej: Mesa 4">
+</div>
+
+<!-- Productos -->
+<div id="products"></div>
+
+<!-- Pedido -->
+<div class="card">
+  <h2>🛒 Pedido Mesa</h2>
+  <ul id="cart"></ul>
+
+  <button id="sendBtn">
+    🍽️ Enviar a Cocina
+  </button>
+</div>
+
+<script type="module">
+  import { db } from "./firebase.js";
+
+  import {
+    collection,
+    getDocs,
+    addDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const productsDiv = document.getElementById("products");
+  const cartUl = document.getElementById("cart");
+  const sendBtn = document.getElementById("sendBtn");
+
+  let cart = [];
+
+  // ✅ Render carrito
+  function renderCart() {
+    cartUl.innerHTML = "";
+
+    cart.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item.name;
+      cartUl.appendChild(li);
+    });
+  }
+
+  // ✅ Agregar producto
+  function addToCart(product) {
+    cart.push(product);
+    renderCart();
+  }
+
+  // ✅ Cargar productos Firestore
+  async function loadProducts() {
+    productsDiv.innerHTML = "<p>Cargando menú...</p>";
+
+    const snap = await getDocs(collection(db, "products"));
+
+    productsDiv.innerHTML = "";
+
+    snap.forEach(docSnap => {
+      const p = docSnap.data();
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <h2 style="color:gold;">${p.name}</h2>
+        <p>${p.description || ""}</p>
+        <p><b>$${p.price}</b></p>
+      `;
+
+      const btn = document.createElement("button");
+      btn.textContent = "➕ Agregar";
+      btn.addEventListener("click", () => addToCart({
+        name: p.name,
+        price: p.price
+      }));
+
+      card.appendChild(btn);
+      productsDiv.appendChild(card);
+    });
+  }
+
+  // ✅ Enviar pedido
+  sendBtn.addEventListener("click", async () => {
+
+    const table = document.getElementById("table").value;
+
+    if (!table) {
+      alert("⚠️ Poné tu número de mesa");
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert("⚠️ No agregaste productos");
+      return;
+    }
+
+    await addDoc(collection(db, "orders"), {
+      table,
+      items: cart,
+      status: "pendiente",
+      createdAt: serverTimestamp()
+    });
+
+    alert("✅ Pedido enviado a cocina!");
+
+    cart = [];
+    renderCart();
+  });
+
+  // 🚀 Iniciar
+  loadProducts();
+</script>
+
+<!-- Service Worker -->
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("✅ Menú QR instalable"))
+      .catch(err => console.log("Error SW:", err));
+  }
+</script>
+
+</body>
+</html>

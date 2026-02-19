@@ -1,0 +1,50 @@
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #000;
+  color: gold;
+}
+
+header {
+  text-align: center;
+  padding: 15px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.card {
+  background: #111;
+  border: 1px solid gold;
+  border-radius: 18px;
+  padding: 18px;
+  margin: 15px;
+  box-shadow: 0 0 15px rgba(212,175,55,0.4);
+}
+
+button {
+  background: gold;
+  color: black;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid gold;
+  padding: 10px;
+}
+
+.product-img {
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 8px;
+}

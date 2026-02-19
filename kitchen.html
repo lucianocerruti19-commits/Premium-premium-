@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Tutto Kitchen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="styles.css">
+</head> <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+
+<body>
+
+<header>
+  <h1>🔥 Tutto Cocina</h1>
+  <p>Pedidos en tiempo real</p>
+</header>
+
+<audio id="ding" src="ding.mp3" preload="auto"></audio>
+
+<div id="orders"></div>
+
+<script type="module">
+  import { db } from "./firebase.js";
+
+  import {
+    collection,
+    query,
+    orderBy,
+    onSnapshot,
+    doc,
+    updateDoc
+  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const ordersDiv = document.getElementById("orders");
+  const ding = document.getElementById("ding");
+
+  let firstLoad = true;
+
+  // ✅ Escuchar pedidos en vivo
+  const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+
+  onSnapshot(q, (snapshot) => {
+
+    ordersDiv.innerHTML = "";
+
+    // 🔔 Ding solo si llega pedido nuevo
+    if (!firstLoad && !snapshot.empty) {
+      ding.play();
+    }
+    firstLoad = false;
+
+    snapshot.forEach(docSnap => {
+
+      const order = docSnap.data();
+      const id = docSnap.id;
+
+      // Solo pedidos pendientes
+      if (order.status === "listo") return;
+
+      let itemsHTML = "";
+      order.items.forEach(i => {
+        itemsHTML += `<li>${i.name}</li>`;
+      });
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <h2 style="color:gold;">🍕 Pedido</h2>
+
+        <p><b>Mesa:</b> ${order.table || "Delivery"}</p>
+
+        <ul>${itemsHTML}</ul>
+
+        <button onclick="markDone('${id}')">
+          ✅ Pedido Listo
+        </button>
+      `;
+
+      ordersDiv.appendChild(card);
+    });
+
+  });
+
+  // ✅ Marcar pedido como listo
+  window.markDone = async function(id) {
+
+    await updateDoc(doc(db, "orders", id), {
+      status: "listo"
+    });
+
+    alert("Pedido marcado como listo ✅");
+  };
+</script> 
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("✅ Tutto PWA instalada"))
+      .catch(err => console.log("Error SW:", err));
+  }
+</script>
+
+</body>
+</html>
